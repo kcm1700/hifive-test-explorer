@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.htmlhifive.testexplorer.cache.Scheduler;
 import com.htmlhifive.testexplorer.image.EdgeDetector;
 import com.htmlhifive.testexplorer.model.Capability;
 import com.htmlhifive.testexplorer.model.Screenshot;
@@ -47,6 +48,8 @@ public class ImageController {
 	private Properties apiConfig;
 
 	private static Logger log = LoggerFactory.getLogger(ImageController.class);
+	
+	private static Scheduler imageCacheScheduler = new Scheduler();
 
 	/**
 	 * Get the image from id.
