@@ -130,6 +130,38 @@ public class ImageController {
 		}
 	}
 
+	/**
+	 * Get the diff marker of comparison result. If there is no difference,
+	 * return 1px*1px sized transparent image.
+	 *
+	 * @param actualId comparison source image id
+	 * @param expectedId comparison target image id
+	 * @param response HttpServletResponse
+	 */
+	@RequestMapping(value = "/getMarker", method = RequestMethod.GET)
+	public void getMarker(@RequestParam Integer actualId, @RequestParam Integer expectedId, HttpServletResponse response) {
+		Screenshot actualImg = screenshotRepo.findOne(actualId);
+		Screenshot expectedImg = screenshotRepo.findOne(expectedId);
+
+		try {
+			// Read both image and compare
+			BufferedImage actual = ImageIO.read(getFile(actualImg));
+			BufferedImage expected = ImageIO.read(getFile(expectedImg));
+
+			List<Point> diff = ImageUtility.compareImages(expected, null, actual, null, null, null);
+			BufferedImage result;
+			if (!diff.isEmpty()) {
+				BufferedImage bkground = new BufferedImage(actual.getWidth(), actual.getHeight(), BufferedImage.TYPE_INT_ARGB);
+				result = ImageUtility.getMarkedImage(bkground, diff);
+			} else {
+				result = new BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB);
+			}
+			sendImage(result, response);
+		} catch (IOException e) {
+			response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+		}
+	}
+
 	private File getFile(Screenshot screenshot) throws FileNotFoundException {
 		String path =
 				configRepo.findOne(ConfigRepository.ABSOLUTE_PATH_KEY).getValue() +
