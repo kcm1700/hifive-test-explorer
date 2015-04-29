@@ -23,12 +23,23 @@ body {
 	text-align: center;
 }
 
-.expected img {
+.expected img.image {
 	border: 1px solid blue;
 }
 
-.actual img {
+.actual img.image {
 	border: 1px solid red;
+}
+
+.expected, .actual {
+	position: relative;
+}
+
+img.marker {
+	position: absolute;
+	left: 1px;
+	right: 1px;
+	bottom: 1px;
 }
 
 .expected .image-label {

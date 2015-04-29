@@ -77,46 +77,14 @@
 			this._testResultDiffLogic.getScreenshot(id).done(this.own(function(screenshot) {
 				// Expected mode
 				if (screenshot.expectedScreenshot == null) {
-					this._setActualImageSrc(false, {
-						id: id
-					});
 					this._hideActualMode();
-					return;
-				}
-				this._hideExpectedMode();
-				var expectedScreenshot = screenshot.expectedScreenshot;
-
-				// Test not executed
-				if (screenshot.comparisonResult == null) {
-					this._setExpectedImageSrc(false, {
-						id: expectedScreenshot.id
-					});
-					return;
-				}
-
-				if (screenshot.comparisonResult) {
-					// Test succeeded
-					this._setActualImageSrc(false, {
-						id: id
-					});
-
-					this._setExpectedImageSrc(false, {
-						id: expectedScreenshot.id
-					});
+					this._initDiffViews(id, id);
 				} else {
-					// Test failed
-					this._setActualImageSrc(true, {
-						sourceId: id,
-						targetId: expectedScreenshot.id
-					});
-
-					this._setExpectedImageSrc(true, {
-						sourceId: expectedScreenshot.id,
-						targetId: id
-					});
+					this._hideExpectedMode();
+					var expectedId = screenshot.expectedScreenshot.id;
+					this._initDiffViews(expectedId, id);
+					this._initEdgeOverlapping(expectedId, id);
 				}
-
-				this._initEdgeOverlapping(expectedScreenshot.id, id);
 			}));
 
 			this._initializeSwipeHandle();
@@ -133,27 +101,21 @@
 		},
 
 		/**
-		 * Show actual image.
-		 *
 		 * @memberOf hifive.test.explorer.controller.TestResultDiffController
-		 * @param {Boolean} withMarker whether or not to display the image with markers.
-		 * @param {Object} params extra paramters
+		 * @param {Number} expectedId ID of expected image
+		 * @param {Number} actualId ID of actual image
 		 */
-		_setActualImageSrc: function(withMarker, params) {
-			this._setImageSrc('.actual img', withMarker, params);
-		},
+		_initDiffViews: function(expectedId, actualId) {
+			var format = hifive.test.explorer.utils.formatUrl;
 
-		/**
-		 * Show expected image.
-		 *
-		 * @memberOf hifive.test.explorer.controller.TestResultDiffController
-		 * @param {Boolean} withMarker whether or not to display the image with markers.
-		 * @param {Object} params extra paramters
-		 */
-		_setExpectedImageSrc: function(withMarker, params) {
-			this._setImageSrc('.expected img', withMarker, params);
-		},
+			var actual = format('image/get', { id: actualId });
+			var expected = format('image/get', { id: expectedId });
+			var marker = format('image/getMarker', { expectedId: expectedId, actualId: actualId });
 
+			$('.actual img.image').attr('src', actual);
+			$('.expected img.image').attr('src', expected);
+			$('img.marker').attr('src', marker);
+		},
 
 		/**
 		 * @memberOf hifive.test.explorer.controller.TestResultDiffController
@@ -222,19 +184,6 @@
 					});
 				}
 			});
-		},
-
-		/**
-		 * Show image.
-		 *
-		 * @memberOf hifive.test.explorer.controller.TestResultDiffController
-		 * @param {String} selector jQuery selector expression which determines the image node
-		 * @param {Boolean} withMarker whether or not to display the image with markers.
-		 * @param {Object} params extra paramters
-		 */
-		_setImageSrc: function(selector, withMarker, params) {
-			var url = withMarker ? 'image/getDiff' : 'image/get';
-			this.$find(selector).attr('src', hifive.test.explorer.utils.formatUrl(url, params));
 		},
 
 		_hideActualMode: function() {
