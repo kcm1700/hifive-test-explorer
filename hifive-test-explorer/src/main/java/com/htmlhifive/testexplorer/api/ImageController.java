@@ -29,7 +29,7 @@ import com.htmlhifive.testexplorer.entity.ConfigRepository;
 import com.htmlhifive.testexplorer.entity.Screenshot;
 import com.htmlhifive.testexplorer.entity.ScreenshotRepository;
 import com.htmlhifive.testexplorer.image.EdgeDetector;
-import com.htmlhifive.testlib.image.utlity.ImageUtility;
+import com.htmlhifive.testexplorer.image.ImageUtility;
 
 @Controller
 @RequestMapping("/image")
