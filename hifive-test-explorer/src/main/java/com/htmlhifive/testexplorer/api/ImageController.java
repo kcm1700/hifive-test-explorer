@@ -98,39 +98,6 @@ public class ImageController {
 	}
 
 	/**
-	 * Get the diff image with a marker of comparison result. If there is no difference, return normal image.
-	 *
-	 * @param sourceId comparison source image id
-	 * @param targetId comparison target image id
-	 * @param response HttpServletResponse
-	 */
-	@RequestMapping(value = "/getDiff", method = RequestMethod.GET)
-	public void getDiffImage(@RequestParam Integer sourceId, @RequestParam Integer targetId, HttpServletResponse response) {
-		Screenshot sourceScreenshot = screenshotRepo.findOne(sourceId);
-		Screenshot targetScreenshot = screenshotRepo.findOne(targetId);
-
-		try {
-			File source = getFile(sourceScreenshot);
-			File target = getFile(targetScreenshot);
-
-			// Create a partial image
-			BufferedImage actual = ImageIO.read(source);
-			BufferedImage expected = ImageIO.read(target);
-
-			// Compare.
-			List<Point> diffPoints = ImageUtility.compareImages(expected, null, actual, null, null, null);
-			if (diffPoints.isEmpty()) {
-				sendFile(source, response);
-			} else {
-				BufferedImage marked = ImageUtility.getMarkedImage(actual, diffPoints);
-				sendImage(marked, response);
-			}
-		} catch (IOException e) {
-			response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
-		}
-	}
-
-	/**
 	 * Get the diff marker of comparison result. If there is no difference,
 	 * return 1px*1px sized transparent image.
 	 *
