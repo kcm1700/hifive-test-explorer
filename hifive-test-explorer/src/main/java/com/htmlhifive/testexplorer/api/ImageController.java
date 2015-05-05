@@ -58,8 +58,7 @@ public class ImageController {
 
 		// Send PNG image
 		try {
-			File file = getFile(screenshot);
-			sendFile(file, response);
+			sendFile(getFile(screenshot), response);
 		} catch (IOException e) {
 			response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
 		}
@@ -78,7 +77,6 @@ public class ImageController {
 		Screenshot screenshot = screenshotRepo.findOne(id);
 
 		try {
-			BufferedImage image = ImageIO.read(getFile(screenshot));
 			EdgeDetector edgeDetector = new EdgeDetector(0.5);
 
 			switch (colorIndex) {
@@ -90,7 +88,7 @@ public class ImageController {
 				break;
 			}
 
-			BufferedImage edgeImage = edgeDetector.DetectEdge(image);
+			BufferedImage edgeImage = edgeDetector.DetectEdge(ImageIO.read(getFile(screenshot)));
 			sendImage(edgeImage, response);
 		} catch (IOException e) {
 			response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
@@ -148,13 +146,11 @@ public class ImageController {
 
 	private void sendFile(File file, HttpServletResponse response) throws IOException {
 		response.setContentType("image/png");
-		response.flushBuffer();
 		IOUtils.copy(new FileInputStream(file), response.getOutputStream());
 	}
 
 	private void sendImage(BufferedImage image, HttpServletResponse response) throws IOException {
 		response.setContentType("image/png");
-		response.flushBuffer();
 		ImageIO.write(image, "png", response.getOutputStream());
 	}
 }
