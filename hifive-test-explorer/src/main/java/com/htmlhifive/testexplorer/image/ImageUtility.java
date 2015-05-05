@@ -5,20 +5,15 @@ package com.htmlhifive.testexplorer.image;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
-import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.imageio.ImageIO;
@@ -27,86 +22,6 @@ import com.htmlhifive.testlib.core.AssertImage;
 import com.htmlhifive.testlib.image.model.CompareOption;
 
 public class ImageUtility {
-
-	public static double[][] calcIntegralImage(BufferedImage source) {
-		double[][] integralImage = new double[source.getHeight()][source.getWidth()];
-		Raster raster = source.getRaster();
-		int[] pixel = new int[raster.getNumDataElements()];
-		double leftNum, upNum, leftUpNum;
-		for (int y = 0; y < source.getHeight(); y++) {
-			for (int x = 0; x < source.getWidth(); x++) {
-				leftNum = (x == 0) ? 0 : integralImage[y][x - 1];
-				upNum = (y == 0) ? 0 : integralImage[y - 1][x];
-				leftUpNum = (x == 0 || y == 0) ? 0 : integralImage[y - 1][x - 1];
-				integralImage[y][x] = leftNum + upNum + raster.getPixel(x, y, pixel)[0] - leftUpNum;
-			}
-		}
-		return integralImage;
-	}
-
-	/**
-	 * @param contained
-	 * @param container
-	 * @return
-	 */
-	public static boolean isContained(BufferedImage contained, BufferedImage container) {
-		// 元画像の積分画像を作成
-		double[][] integralImage = ImageUtility.calcIntegralImage(container);
-
-		double sumContent = 0;
-		Raster r = contained.getRaster();
-		int[] dArray = new int[r.getNumDataElements()];
-		for (int x = 0; x < r.getWidth(); x++) {
-			for (int y = 0; y < r.getHeight(); y++) {
-				sumContent += r.getPixel(x, y, dArray)[0];
-			}
-		}
-
-		int contentWidth = contained.getWidth();
-		int contentHeight = contained.getHeight();
-		double p0, p1, p2, p3, sumContainer;
-		BufferedImage window;
-		for (int y = 0; y < container.getHeight() - contained.getHeight() + 1; y++) {
-			// System.out.println(y);
-			for (int x = 0; x < container.getWidth() - contained.getWidth() + 1; x++) {
-				p0 = integralImage[y + contentHeight - 1][x + contentWidth - 1];
-				p1 = (x == 0) ? 0 : integralImage[y + contentHeight - 1][x - 1];
-				p2 = (y == 0) ? 0 : integralImage[y - 1][x + contentWidth - 1];
-				p3 = (x == 0 || y == 0) ? 0 : integralImage[y - 1][x - 1];
-				sumContainer = p0 - p1 - p2 + p3;
-				// System.out.println(sumContainer / numPixel);
-
-				// System.out.println(sumContainer - sumContent);
-				if (sumContainer == sumContent) {
-					window = container.getSubimage(x, y, contentWidth, contentHeight);
-					if (imgEquals(window, contained)) {
-						System.out.println("(x, y): (" + x + ", " + y + ")");
-						return true;
-					}
-				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	 * BufferedImageが等しいかどうかの2値を返す
-	 *
-	 * @param img1
-	 * @param img2
-	 * @return
-	 */
-	private static boolean imgEquals(BufferedImage img1, BufferedImage img2) {
-		if (img1.getWidth() != img2.getWidth() || img1.getHeight() != img2.getHeight()) {
-			return false; // サイズ不一致
-		} else {
-			int width = img1.getWidth();
-			int height = img1.getHeight();
-			return Arrays.equals(img1.getRGB(0, 0, width, height, null, 0, width),
-					img2.getRGB(0, 0, width, height, null, 0, width));
-		}
-	}
-
 	/**
 	 * 2つの画像を比較し、一致しない領域の座標リストを返す。 TODO Optionは動作しない
 	 *
@@ -201,63 +116,6 @@ public class ImageUtility {
 	}
 
 	/**
-	 * 元画像をマスクしたdiff画像を生成する。
-	 *
-	 * @param base 元画像
-	 * @param diffModel 比較で一致しなかったピクセルの集合
-	 * @return diff画像のBufferedImage
-	 */
-	public static BufferedImage getMaskedImage(BufferedImage base, List<Rectangle> diffRectangles) {
-
-		BufferedImage copyImage = getDeepCopyImage(base);
-
-		Color color = Color.RED;
-		Graphics grf = copyImage.getGraphics();
-		grf.setColor(color);
-
-		// rectsで指定される領域をマスクする
-		for (Rectangle rect : diffRectangles) {
-			Point loc = rect.getLocation();
-			Dimension size = rect.getSize();
-			grf.fillRect(loc.x, loc.y, size.width, size.height);
-		}
-		grf.dispose();
-
-		return copyImage;
-
-	}
-
-	/**
-	 * 画像をグレースケールにする see: http://d.hatena.ne.jp/kgu/20130324/1364111482
-	 *
-	 * @param image 画像
-	 */
-	public static BufferedImage getGrayScaleImage(BufferedImage image) {
-		BufferedImage copyImage = getDeepCopyImage(image);
-		WritableRaster raster = copyImage.getRaster();
-
-		int[] pixelBuffer = new int[raster.getNumDataElements()];
-
-		for (int y = 0; y < raster.getHeight(); y++) {
-			for (int x = 0; x < raster.getWidth(); x++) {
-				// ピクセルごとに処理
-
-				raster.getPixel(x, y, pixelBuffer);
-
-				// 単純平均法((R+G+B)/3)でグレースケール化したときの輝度取得
-				int pixelAvg = (pixelBuffer[0] + pixelBuffer[1] + pixelBuffer[2]) / 3;
-				// RGBをすべてに同値を設定することでグレースケール化する
-				pixelBuffer[0] = pixelAvg;
-				pixelBuffer[1] = pixelAvg;
-				pixelBuffer[2] = pixelAvg;
-				raster.setPixel(x, y, pixelBuffer);
-			}
-		}
-
-		return copyImage;
-	}
-
-	/**
 	 * 画像をdeepコピーする。subImageで来ることがあるためrasterも範囲を指定する。
 	 *
 	 * @param image
@@ -348,54 +206,6 @@ public class ImageUtility {
 	}
 
 	/**
-	 * 二つの画像と、マーク情報からDiff比較用画像を返す
-	 *
-	 * @param leftImg 左側の画像
-	 * @param rightImg 右側の画像
-	 * @param diffPoints Diffの座標
-	 * @return
-	 */
-	public static BufferedImage getDiffImage(BufferedImage leftImg, BufferedImage rightImg, List<Point> diffPoints) {
-
-		if (diffPoints != null && diffPoints.isEmpty()) {
-			return null;
-		}
-
-		if (diffPoints == null) {
-			// TODO: 画像サイズが違うとdiffPointsがnullになる。一旦仮置きで並べた画像だけ表示
-			diffPoints = new ArrayList<Point>();
-		}
-
-		// Diff画像の生成
-		BufferedImage expectedBaseImage = getMarkedImage(leftImg, diffPoints);
-		BufferedImage actualBaseImage = getMarkedImage(rightImg, diffPoints);
-		int diffImageWidth = expectedBaseImage.getWidth() + actualBaseImage.getWidth();
-		int diffImageHeight = (expectedBaseImage.getHeight() >= actualBaseImage.getHeight()) ? expectedBaseImage
-				.getHeight() : actualBaseImage.getHeight();
-		int statusHeight = 50; // expected/actualのラベルを表示する領域の高さ
-		BufferedImage diffImage = new BufferedImage(diffImageWidth + 4, diffImageHeight + statusHeight + 2, 1); // 上下左右の枠1px分を幅、高さに含める
-		Graphics2D g = (Graphics2D) diffImage.getGraphics();
-		// 左右の差分画像（グレースケール）の描画
-		g.drawImage(expectedBaseImage, 1, statusHeight + 1, null);
-		g.drawImage(actualBaseImage, expectedBaseImage.getWidth() + 3, statusHeight + 1, null);
-		// expected（左）のラベル領域と枠の描画
-		g.setColor(new Color(0.2f, 0.5f, 1.0f, 1.0f)); // 青
-		g.fillRect(0, 0, expectedBaseImage.getWidth() + 3, statusHeight + 1);
-		g.drawRect(0, statusHeight, expectedBaseImage.getWidth() + 1, diffImageHeight + 1);
-		// actual（右）のラベル領域と枠の描画
-		g.setColor(new Color(0.8f, 0.2f, 0.2f, 1.0f)); // 赤
-		g.fillRect(expectedBaseImage.getWidth() + 2, 0, actualBaseImage.getWidth() + 3, statusHeight + 1);
-		g.drawRect(expectedBaseImage.getWidth() + 2, statusHeight, actualBaseImage.getWidth() + 1, diffImageHeight + 1);
-		// ラベル文字の描画
-		g.setColor(new Color(1.0f, 1.0f, 1.0f, 1.0f));
-		g.setFont(new Font("Arial", Font.BOLD, 25));
-		g.drawString("expected", expectedBaseImage.getWidth() / 2 - 80, 35);
-		g.drawString("actual", expectedBaseImage.getWidth() + actualBaseImage.getWidth() / 2 - 80 + 3, 35);
-
-		return diffImage;
-	}
-
-	/**
 	 * diff座標から近似の四角形を作成する。
 	 *
 	 * @param diffPoints
@@ -452,30 +262,5 @@ public class ImageUtility {
 			rectangles.add(markerGroup.getRectangle());
 		}
 		return rectangles;
-	}
-
-	/**
-	 * 二つの画像とdiff座標から、diff画像を作成する。
-	 *
-	 * @param leftImg 左側の画像イメージ
-	 * @param rightImg 右側の画像イメージ
-	 * @param diffPoints diff座標
-	 * @param filePath 保存パス
-	 * @throws IOException
-	 */
-	public static void saveDiffImage(BufferedImage leftImg, BufferedImage rightImg, List<Point> diffPoints,
-			String filePath) throws IOException {
-		saveImage(getDiffImage(leftImg, rightImg, diffPoints), filePath);
-	}
-
-	/**
-	 * イメージを保存する
-	 *
-	 * @param img 保存するイメージ
-	 * @param filePath 保存先パス
-	 * @throws IOException
-	 */
-	private static void saveImage(BufferedImage img, String filePath) throws IOException {
-		ImageIO.write(img, "png", new File(filePath + ".png"));
 	}
 }
