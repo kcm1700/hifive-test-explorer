@@ -23,7 +23,7 @@ public class ImageUtility {
 	/**
 	 * 2つの画像を比較し、一致しない領域の座標リストを返す。
 	 */
-	public static List<Rectangle> compare(BufferedImage img1, BufferedImage img2) {
+	public static List<Rect> compare(BufferedImage img1, BufferedImage img2) {
 		// 共通部分以外は、diff設定する
 		final int beginX = Math.min(img1.getWidth(), img2.getWidth());
 		final int endX = Math.max(img1.getWidth(), img2.getWidth());
@@ -75,8 +75,13 @@ public class ImageUtility {
 			/**
 			 * 点の集合の四角形を返す
 			 */
-			public Rectangle getRectangle() {
-				return rectangle;
+			public Rect getRect() {
+				Rect ret = new Rect();
+				ret.left = rectangle.x;
+				ret.right = rectangle.x + rectangle.width;
+				ret.top = rectangle.y;
+				ret.bottom = rectangle.y + rectangle.height;
+				return ret;
 			}
 		}
 
@@ -118,8 +123,8 @@ public class ImageUtility {
 		}
 
 		// diffGroupsからRectangleのリストを作成
-		List<Rectangle> rectangles = new ArrayList<Rectangle>();
-		for (MarkerGroup markerGroup : diffGroups) { rectangles.add(markerGroup.getRectangle()); }
+		List<Rect> rectangles = new ArrayList<Rect>();
+		for (MarkerGroup markerGroup : diffGroups) { rectangles.add(markerGroup.getRect()); }
 		return rectangles;
 	}
 
@@ -129,7 +134,7 @@ public class ImageUtility {
 	 * @return
 	 * @throws IOException
 	 */
-	public static BufferedImage getMarkedImage(BufferedImage img, List<Rectangle> diffRectangles) throws IOException {
+	public static BufferedImage getMarkedImage(BufferedImage img, List<Rect> diffRectangles) throws IOException {
 		// マーカーの方が範囲が大きい場合、その範囲の画像を作成する
 		int markerMaxX = img.getWidth();
 		int markerMaxY = img.getHeight();
@@ -137,24 +142,24 @@ public class ImageUtility {
 		int markerMinY = 0;
 
 		boolean isExtend = false;
-		for (Rectangle rectangle : diffRectangles) {
+		for (Rect rectangle : diffRectangles) {
 			// マーカーの最大値を取得する
-			if (markerMaxX < (int) rectangle.getMaxX() + 4) {
-				markerMaxX = (int) rectangle.getMaxX() + 4;
+			if (markerMaxX < (int) rectangle.right + 4) {
+				markerMaxX = (int) rectangle.right + 4;
 				isExtend = true;
 			}
-			if (markerMaxY < (int) rectangle.getMaxY() + 4) {
-				markerMaxY = (int) rectangle.getMaxY() + 4;
-				isExtend = true;
-			}
-
-			if (markerMinX > rectangle.getMinX() - 30) {
-				markerMinX = (int) rectangle.getMinX() - 30;
+			if (markerMaxY < (int) rectangle.bottom + 4) {
+				markerMaxY = (int) rectangle.bottom + 4;
 				isExtend = true;
 			}
 
-			if (markerMinY > rectangle.getMinY() - 25) {
-				markerMinY = (int) rectangle.getMinY() - 25;
+			if (markerMinX > rectangle.left - 30) {
+				markerMinX = (int) rectangle.left - 30;
+				isExtend = true;
+			}
+
+			if (markerMinY > rectangle.top - 25) {
+				markerMinY = (int) rectangle.top - 25;
 				isExtend = true;
 			}
 		}
@@ -183,10 +188,10 @@ public class ImageUtility {
 		marker.setStroke(new BasicStroke(4.0f));
 		// 異なるピクセルの左上にマーカーを置いていく
 		BufferedImage mark = ImageIO.read(AssertImage.class.getClassLoader().getResource("mark.png"));
-		for (Rectangle markerGroup : diffRectangles) {
-			marker.drawImage(mark, markerGroup.x - 30 - markerMinX, markerGroup.y - 25 - markerMinY, null);
-			marker.drawRect(markerGroup.x - 2 - markerMinX, markerGroup.y - 2 - markerMinY, markerGroup.width + 4,
-					markerGroup.height + 4);
+		for (Rect markerGroup : diffRectangles) {
+			marker.drawImage(mark, markerGroup.left - 30 - markerMinX, markerGroup.top - 25 - markerMinY, null);
+			marker.drawRect(markerGroup.left - 2 - markerMinX, markerGroup.top - 2 - markerMinY, markerGroup.right - markerGroup.left + 4,
+					markerGroup.bottom - markerGroup.top + 4);
 		}
 
 		return markedImg;

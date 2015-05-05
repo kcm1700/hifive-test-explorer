@@ -24,12 +24,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.htmlhifive.testexplorer.entity.ConfigRepository;
 import com.htmlhifive.testexplorer.entity.Screenshot;
 import com.htmlhifive.testexplorer.entity.ScreenshotRepository;
 import com.htmlhifive.testexplorer.image.EdgeDetector;
 import com.htmlhifive.testexplorer.image.ImageUtility;
+import com.htmlhifive.testexplorer.image.Rect;
 
 @Controller
 @RequestMapping("/image")
@@ -104,7 +106,7 @@ public class ImageController {
 	 * @param response HttpServletResponse
 	 */
 	@RequestMapping(value = "/getMarker", method = RequestMethod.GET)
-	public void getMarker(@RequestParam Integer actualId, @RequestParam Integer expectedId, HttpServletResponse response) {
+	public void getMarkerImage(@RequestParam Integer actualId, @RequestParam Integer expectedId, HttpServletResponse response) {
 		Screenshot actualImg = screenshotRepo.findOne(actualId);
 		Screenshot expectedImg = screenshotRepo.findOne(expectedId);
 
@@ -113,7 +115,7 @@ public class ImageController {
 			BufferedImage actual = ImageIO.read(getFile(actualImg));
 			BufferedImage expected = ImageIO.read(getFile(expectedImg));
 
-			List<Rectangle> diff = ImageUtility.compare(expected, actual);
+			List<Rect> diff = ImageUtility.compare(expected, actual);
 			BufferedImage result;
 			if (!diff.isEmpty()) {
 				BufferedImage bkground = new BufferedImage(actual.getWidth(), actual.getHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -125,6 +127,27 @@ public class ImageController {
 		} catch (IOException e) {
 			response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
 		}
+	}
+
+	/**
+	 * Get the diff marker of comparison result. If there is no difference,
+	 * return 1px*1px sized transparent image.
+	 *
+	 * @param actualId comparison source image id
+	 * @param expectedId comparison target image id
+	 * @param response HttpServletResponse
+	 */
+	@RequestMapping(value = "/getMarker.json", method = RequestMethod.GET)
+	public @ResponseBody List<Rect> getMarker(@RequestParam Integer actualId, @RequestParam Integer expectedId, HttpServletResponse response) {
+		List<Rect> ret = null;
+		try {
+			ret = ImageUtility.compare(
+					ImageIO.read(getFile(screenshotRepo.findOne(actualId))),
+					ImageIO.read(getFile(screenshotRepo.findOne(expectedId))));
+		} catch (IOException e) {
+			response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+		}
+		return ret;
 	}
 
 	private File getFile(Screenshot screenshot) throws FileNotFoundException {
