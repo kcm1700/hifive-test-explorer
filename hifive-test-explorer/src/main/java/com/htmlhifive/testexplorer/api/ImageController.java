@@ -113,7 +113,7 @@ public class ImageController {
 			BufferedImage actual = ImageIO.read(getFile(actualImg));
 			BufferedImage expected = ImageIO.read(getFile(expectedImg));
 
-			List<Point> diff = ImageUtility.compareImages(expected, null, actual, null, null, null);
+			List<Rectangle> diff = ImageUtility.compare(expected, actual);
 			BufferedImage result;
 			if (!diff.isEmpty()) {
 				BufferedImage bkground = new BufferedImage(actual.getWidth(), actual.getHeight(), BufferedImage.TYPE_INT_ARGB);
