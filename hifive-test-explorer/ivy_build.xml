@@ -14,9 +14,24 @@
 	<property name="ivy.install.dir" location="lib/ivy" />
 	<!-- 取得ライブラリ展開フォルダ -->
 	<property name="lib.dir" location="lib" />
+	<!-- build directory -->
+	<property name="build.dir" location="target/classes" />
+	<!-- src directory -->
+	<property name="src.dir" location="src" />
+	<!-- test directory -->
+	<property name="test.dir" location="${src.dir}/test" />
+	<!-- tomcat library directory -->
+	<property name="tomcat.dir" location="${lib.dir}/for-travis"/>
 
 	<!-- ivy取得URL -->
 	<property name="ivy.url" value="http://repo1.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar" />
+
+	<path id="master-classpath">
+		<fileset dir="${lib.dir}">
+			<include name="**/*.jar"/>
+		</fileset>
+		<pathelement path="${build.dir}"/>
+	</path>
 
 	<target name="check-ivy" description="--> ivy installation check">
 		<condition property="skip.download">
@@ -60,6 +75,28 @@
 
 	<target name="resolve-sub" description="--> call ivy">
 		<ivy:retrieve pattern="${lib.dir}/sources/[artifact]-[revision]-sources.[ext]" type="source" conf="${conf.name}" />
+	</target>
+
+	<target name="build" description="build project">
+		<mkdir dir="${build.dir}"/>
+		<javac destdir="${build.dir}">
+			<src path="${src.dir}"/>
+			<classpath refid="master-classpath"/>
+		</javac>
+	</target>
+
+	<target name="test" description="run junit tests">
+		<junit showoutput="true" printsummary="on" dir=".">
+			<classpath refid="master-classpath"/>
+			<classpath>
+				<fileset dir="${lib.dir}" includes="junit*.jar" />
+			</classpath>
+			<batchtest fork="yes">
+				<fileset dir="${test.dir}/java/">
+					<include name="**/*Test.java" />
+				</fileset>
+			</batchtest>
+		</junit>
 	</target>
 
 </project>
