@@ -2,4 +2,4 @@ language: java
 jdk:
   - oraclejdk7
 install: (cd hifive-test-explorer; ant -f ivy_build.xml resolve)
-script: (cd hifive-test-explorer; ant -f ivy_build.xml build)
+script: (cd hifive-test-explorer; ant -f ivy_build.xml build test)
